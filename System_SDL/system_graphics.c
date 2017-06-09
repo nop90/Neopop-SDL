@@ -173,8 +173,8 @@ system_graphics_fullscreen(int mode)
     // hide mouse pointer in fullscreen mode
     if (SDL_ShowCursor(-1) == fs_mode)
 	    SDL_ShowCursor(1-fs_mode);
-    if (use_yuv >= YUV_FULLSCREEN)
-	system_graphics_screen_init(graphics_mag_actual);
+//    if (use_yuv >= YUV_FULLSCREEN)
+//	system_graphics_screen_init(graphics_mag_actual);
 }
 
 static BOOL

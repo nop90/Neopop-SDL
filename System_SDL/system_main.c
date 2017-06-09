@@ -28,6 +28,7 @@
 #include "NeoPop-SDL.h"
 
 #include "3ds.h"
+#include "menu.h"
 
 char *prg;
 struct timeval throttle_last;
@@ -355,8 +356,16 @@ main()
      */
     throttle_rate = 1000000/NGP_FPS;
 
-		if (system_rom_load("/roms/neogeopocket/rom.ngc") == FALSE)
-			fprintf(stderr, "no ROM loaded\n");
+    int ret;
+    char rompath[256];
+
+	ret = fileSelect("Select the ROM to load:", rompath, "ngc");
+//		if (system_rom_load("/roms/neogeopocket/rom.ngc") == FALSE)
+	if (ret>=0)	{
+		if (system_rom_load(rompath) == FALSE)
+			fprintf(stderr, "wrong file format: no ROM loaded\n");
+	} else
+		fprintf(stderr, "no ROM selected\n");
 	
     reset();
 	
