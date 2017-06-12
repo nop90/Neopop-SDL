@@ -273,6 +273,8 @@ handle_event(enum neopop_event ev, int type)
 	    break;
 
 	case NPEV_GUI_QUIT:
+	    set_paused(paused|PAUSED_LOCAL);
+
 	    do_exit = 1;
 	    break;
 	    

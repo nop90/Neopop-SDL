@@ -172,35 +172,35 @@ system_sound_update(int nframes)
     /* SDL_UnlockAudio(); */
 
     for (; i<nframes; i++) {
-	if (mute || paused)
-	    memset(sound_buffer+sound_frame_write, silence_value, bpf);
-	else {
-	    dac_update(dac_data, dac_bpf);
-	    /* convert to standard format */
-	    acvt.buf = dac_data;
-	    acvt.len = dac_bpf;
-	    if (SDL_ConvertAudio(&acvt) == -1) {
-		fprintf(stderr,
-			"DAC data conversion failed: %s\n", SDL_GetError());
-		return;
-	    }
-	    
-	    /* get sound data */
-	    sound_update((_u16 *)(sound_buffer+sound_frame_write), bpf);
-	    
-	    /* mix both streams into one */
-	    SDL_MixAudio(sound_buffer+sound_frame_write,
-			 dac_data, bpf, SDL_MIX_MAXVOLUME);
-	}
-	
-	sound_frame_write = FRAME_INC(sound_frame_write);
-	if (sound_frame_write == sound_frame_read) {
-	    fprintf(stderr, "your machine is much too slow.\n");
-	    /* XXX: handle this */
-	    exit(1);
-	}
-
-	SDL_SemPost(rsem);
+		if (mute || paused)
+			memset(sound_buffer+sound_frame_write, silence_value, bpf);
+		else {
+			dac_update(dac_data, dac_bpf);
+			/* convert to standard format */
+			acvt.buf = dac_data;
+			acvt.len = dac_bpf;
+			if (SDL_ConvertAudio(&acvt) == -1) {
+			fprintf(stderr,
+				"DAC data conversion failed: %s\n", SDL_GetError());
+			return;
+			}
+			
+			/* get sound data */
+			sound_update((_u16 *)(sound_buffer+sound_frame_write), bpf);
+			
+			/* mix both streams into one */
+			SDL_MixAudio(sound_buffer+sound_frame_write,
+				 dac_data, bpf, SDL_MIX_MAXVOLUME);
+		
+		
+		}
+		sound_frame_write = FRAME_INC(sound_frame_write);
+//		if (sound_frame_write == sound_frame_read) {
+//			fprintf(stderr, "your machine is much too slow.\n");
+//			/* XXX: handle this */
+//			exit(1);
+//		}
+		SDL_SemPost(rsem);
     }
 
     if (nframes > 1) {

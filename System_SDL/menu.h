@@ -3,8 +3,8 @@ typedef struct _menu_item_s {
     char* text;             // The text to display for the menu item
     int (*proc)(void);      // Called when the menu item is clicked
     struct _menu_s* child;  // Nested child menu
-    int flags;              // Unused for now
-    void* dp;               // Unused for now
+    int flags;              // format of value to show near menu item (0 none, 1 number, 2 string)
+    int *dp;               // value to show near menu item
 } menu_item_t;
 
 typedef struct _menu_s {
@@ -17,3 +17,7 @@ typedef struct _menu_s {
 int openMenu(menu_t* menu);
 
 int fileSelect(const char* message, char* path, const char* ext);
+
+extern menu_t main_menu;
+extern menu_t options_menu;
+extern menu_t emulation_menu;

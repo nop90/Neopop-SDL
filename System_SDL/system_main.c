@@ -211,7 +211,7 @@ main()
     screenshot_dir = strdup("/3ds/neopop/screenshot");
     state_dir = strdup("/3ds/neopop/state");
     /* use rom name rather than file name for save files */
-    use_rom_name = TRUE;//FALSE;
+    use_rom_name = FALSE;
     /* state save slot */
     state_slot = 0;
     /* colour to display OSD in */
@@ -359,13 +359,14 @@ main()
     int ret;
     char rompath[256];
 
-	ret = fileSelect("Select the ROM to load:", rompath, "ngc");
+	ret = fileSelect("Select ROM: [A] Select [B] Exit", rompath, "ngc");
 //		if (system_rom_load("/roms/neogeopocket/rom.ngc") == FALSE)
 	if (ret>=0)	{
 		if (system_rom_load(rompath) == FALSE)
 			fprintf(stderr, "wrong file format: no ROM loaded\n");
 	} else
-		fprintf(stderr, "no ROM selected\n");
+//		fprintf(stderr, "no ROM selected\n");
+		exit(1);
 	
     reset();
 	
@@ -375,11 +376,16 @@ main()
 
     gettimeofday(&throttle_last, NULL);
     do {
-	if (paused == 0)
-	    emulate();
-	else
-	    system_VBL();
-    } while (do_exit == 0);
+		if (paused == 0)
+			emulate();
+		else {
+			system_VBL();
+			openMenu(&main_menu);
+			consoleClear();
+ 			paused = 0;
+		}    
+
+	} while (do_exit == 0);
 
     system_rom_unload();
     system_sound_shutdown();

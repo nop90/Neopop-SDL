@@ -146,7 +146,7 @@ enum {
 
 #define NGP_FPS 59.95			/* frames per second */
 
-#define DEFAULT_SAMPLERATE	22050 //44100	/* default sample rate */
+#define DEFAULT_SAMPLERATE	8000 //22050 //44100	/* default sample rate */
 #define DEFAULT_YUV	YUV_MAGNIFIED
 
 #define PAUSED_LOCAL	1
