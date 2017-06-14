@@ -195,11 +195,11 @@ system_sound_update(int nframes)
 		
 		}
 		sound_frame_write = FRAME_INC(sound_frame_write);
-//		if (sound_frame_write == sound_frame_read) {
-//			fprintf(stderr, "your machine is much too slow.\n");
-//			/* XXX: handle this */
-//			exit(1);
-//		}
+		if (sound_frame_write == sound_frame_read) {
+			fprintf(stderr, "your machine is much too slow.\n");
+			/* XXX: handle this */
+			exit(1);
+		}
 		SDL_SemPost(rsem);
     }
 

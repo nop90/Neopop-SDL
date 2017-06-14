@@ -39,38 +39,7 @@ int paused = 0;
 int have_sound;
 void readrc(void);
 
-static void
-printversion(void)
-{
-    printf(PROGRAM_NAME " (SDL) " NEOPOP_VERSION " (SDL-Version "
-	   VERSION ")\n");
-}
-
-static void
-usage(int exitcode)
-{
-    printversion();
-    printf("NeoGeo Pocket emulator\n\n"
-	   "Usage: %s [-cefghjMmSsv] [-C mode] [-P port] [-R remove] [game]\n"
-	   "\t-C mode\t\tspecify comms mode (none, server, client; default: none)\n"
-	   "\t-c\t\tstart in colour mode (default: automatic)\n"
-	   "\t-e\t\temulate English language NeoGeo Pocket (default)\n"
-	   "\t-f count\tframeskip: show one in `count' frames (default: 1)\n"
-	   "\t-g\t\tstart in greyscale mode (default: automatic)\n"
-	   "\t-h\t\tshow this short help\n"
-	   "\t-j\t\temulate Japanese language NeoGeo Pocket\n"
-	   "\t-l state\tload start state from file `state'\n"
-	   "\t-M\t\tdo not use smoothed magnification modes\n"
-	   "\t-m\t\tuse smoothed magnification modes (default)\n"
-	   "\t-P port\t\tspecify port number to use for comms (default: 7846)\n"
-	   "\t-R host\t\tspecify host to connect to as comms client\n"
-	   "\t-S\t\tsilent mode\n"
-	   "\t-s\t\twith sound (default)\n"
-	   "\t-v\t\tshow version number\n"
-	   "\t-y mode\t\tspecify for which modes to use YUV\n", prg);
-
-    exit(exitcode);
-}
+int started =0;
 
 void
 system_message(char *vaMessage, ...)
@@ -95,7 +64,7 @@ system_VBL(void)
     int newsec;
 
     system_input_update();
-    system_osd_display();
+//    system_osd_display();
 
     if (++frameskip_counter >= system_frameskip_key) {
 	system_graphics_update();
@@ -150,10 +119,13 @@ system_VBL(void)
     }
 
     frame_counter++;
+/*
     if (newsec) {
+
 	char title[128];
 
-	/* set window caption */
+	// set window caption 
+
 	if (graphics_mag_req > 1)
 	    (void)snprintf(title, sizeof(title),
 			   PROGRAM_NAME " - %s - %dfps/FS%d",
@@ -165,8 +137,144 @@ system_VBL(void)
 
 	frame_counter = 0;
     }
-
+*/
     return;
+}
+
+void parse_args(int argc, char *argv[])
+{
+    int ch;
+    int i;
+
+    while ((ch=getopt(argc, argv, "ceTtf:gjSs")) != -1) {
+	switch (ch) {
+	case 'c':
+	    system_colour = COLOURMODE_COLOUR;
+	    break;
+	case 'e':
+	    language_english = TRUE;
+	    break;
+	case 'T':
+	    system_graphics_fullscreen(1);
+	    break;
+	case 't':
+	    system_graphics_fullscreen(0);
+	    break;
+	case 'f':
+	    i = atoi(optarg);
+	    if (i <1 || i > 6) {
+			break;
+	    }		
+	    system_frameskip_key = i;
+	    break;
+	case 'g':
+	    system_colour = COLOURMODE_GREYSCALE;
+	    break;
+	case 'j':
+	    language_english = FALSE;
+	    break;
+	case 'S':
+	    mute = TRUE;
+	    break;
+	case 's':
+
+	    mute = FALSE;
+	    break;
+	}
+  }
+}
+
+/* Parse configuration file */
+int parse_file(const char *filename, int *argc, char **argv)
+{
+    char token[0x100];
+    FILE *handle = NULL;
+
+
+    *argc = 0;
+
+    handle = fopen(filename, "r");
+    if(!handle) return (0);
+
+    while(!(feof(handle)))
+    {
+		fscanf(handle, "%s", &token[0]);
+
+        int size = strlen(token) + 1;
+        argv[*argc] = (char*) malloc(size);
+        if(!argv[*argc]) return (0);
+		sprintf(argv[*argc], "%s", token);
+        *argc += 1;
+    }
+    if(handle) fclose(handle);
+    return (1);
+}
+
+void save_config(char *file)
+{
+    FILE *handle = NULL;
+    handle = fopen(file, "w+");
+
+           fprintf(handle, "%s ", "neopop");
+
+        if(system_colour == COLOURMODE_COLOUR)
+        {
+            fprintf(handle, "%s ", "-c");
+        }
+
+        if(system_colour == COLOURMODE_GREYSCALE)
+        {
+            fprintf(handle, "%s ", "-g");
+        }
+
+        if(fs_mode)
+        {
+            fprintf(handle, "%s ", "-T");
+        } else {
+            fprintf(handle, "%s ", "-t");
+        }
+
+        if(language_english)
+        {
+            fprintf(handle, "%s ", "-e");
+        } else {
+            fprintf(handle, "%s ", "-j");
+        }
+
+        if(mute)
+        {
+            fprintf(handle, "%s ", "-M");
+        } else {
+            fprintf(handle, "%s ", "-m");
+        }
+
+        fprintf(handle, "%s %i ", "-f", system_frameskip_key);
+ 
+ 		fclose(handle);
+}
+
+void load_config(char *file)
+{
+
+    /* Our token list */
+    int i, argc;
+    char *argv[0x100];
+
+    for(i = 0; i < 0x100; i++) argv[i] = NULL;
+
+    /* Check configuration file */
+    if(file) 
+	  if(parse_file(file, &argc, argv)) {
+
+		/* Check extracted tokens */
+		parse_args(argc, argv);
+
+		/* Free token list */
+		for(i = 0; i < argc; i++)
+		{
+			if(argv[argc]) free (argv[argc]);
+		}
+	}
 }
 
 int
@@ -174,8 +282,8 @@ int
 main()
 {
     char *start_state;
-    int ch;
-    int i;
+//    int ch;
+//    int i;
 
 //    prg = argv[0];
     start_state = NULL;
@@ -200,6 +308,7 @@ main()
     /* use YUV overlay (hardware scaling) */
     use_yuv = DEFAULT_YUV;
     use_software_yuv = 0;
+	
     /* directories for save files */
 
     mkdir("/3ds", 0777);
@@ -232,95 +341,8 @@ main()
     system_bindings_init();
     system_rc_read();
 
-//    while ((ch=getopt(argc, argv, "C:cef:ghjl:MmP:R:SsVy:")) != -1) {
-//	switch (ch) {
-//	case 'C':
-//	    i = system_rc_parse_comms_mode(optarg);
-//	    if (i == -1) {
-//		fprintf(stderr, "%s: unknown comms mode `%s'\n",
-//			prg, optarg);
-//		exit(1);
-//	    }
-//	    else
-//		comms_mode = i;
-//	    break;
-//	case 'c':
-	    system_colour = COLOURMODE_COLOUR;
-//	    break;
-//	case 'e':
-	    language_english = TRUE;
-//	    break;
-//	case 'f':
-//	    i = atoi(optarg);
-//	    if (i <1 || i > 7) {
-//		fprintf(stderr, "%s: illegal frame skip `%s'\n",
-//			prg, optarg);
-//		exit(1);
-//	    }		
-	    system_frameskip_key = 1;//i;
-//	    break;
-//	case 'g':
-//	    system_colour = COLOURMODE_GREYSCALE;
-//	    break;
-//	case 'h':
-//	    usage(1);
-//	    break;
-//	case 'j':
-//	    language_english = FALSE;
-//	    break;
-//	case 'l':
-//	    start_state = optarg;
-//	    break;
-//	case 'M':
-//	    graphics_mag_smooth = 0;
-//	    break;
-//	case 'm':
-//	    graphics_mag_smooth = 1;
-//	    break;
-/*
-	case 'P':
-	    i = atoi(optarg);
-	    if (i == 0) {
-		fprintf(stderr, "%s: unknown YUV mode `%s'\n",
-			prg, optarg);
-		exit(1);
-	    }
-	    else
-		comms_port = i;
-	    break;
-	case 'R':
-	    if (comms_host)
-		free(comms_host);
-	    comms_host = strdup(optarg);
-	    break;
-	case 'S':
-	    mute = TRUE;
-	    break;
-	case 's':
-*/
-	    mute = FALSE;
-//	    break;
-/*
-	case 'V':
-	    printversion();
-	    exit(0);
-	    break;
-	case 'y':
-	    i = system_rc_parse_yuv(optarg);
-	    if (i == -1) {
-		// XXX: error message 
-	    }
-	    else
-		use_yuv = i;
-	    break;
-	default:
-	    usage(1);
-	}
-    }
-
-    argc -= optind;
-    argv += optind;
-*/
+	load_config("/3ds/neopop/neopop.cfg");
+	
     /* Fill BIOS buffer */
     if (bios_install() == FALSE) {
 	fprintf(stderr, "cannot install BIOS\n");
@@ -375,6 +397,9 @@ main()
 	state_restore(start_state);
 
     gettimeofday(&throttle_last, NULL);
+	
+	started =1;
+	
     do {
 		if (paused == 0)
 			emulate();

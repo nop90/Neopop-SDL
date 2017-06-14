@@ -199,6 +199,8 @@ void system_sound_update(int);
 void system_state_load(void);
 void system_state_save(void);
 
+void save_config(char *file);
+
 void HQ2x(const Uint8 *, Uint32, Uint8 *, Uint32, int, int);
 void HQ3x(const Uint8 *, Uint32, Uint8 *, Uint32, int, int);
 

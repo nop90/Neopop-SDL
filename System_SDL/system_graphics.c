@@ -23,6 +23,7 @@
 
 #include <errno.h>
 #include "NeoPop-SDL.h"
+#include "3ds.h"
 
 /* graphics size requested: 1 normal, 2 double size, 3 triple size */
 int graphics_mag_req = 1;
@@ -50,7 +51,7 @@ static int use_yuv_now;
 static int graphics_mag_actual = 1;
 
 /* display in full screen mode? */
-int fs_mode = 0;
+int fs_mode = 0; 
 
 /* did we get a VIDEOEXPOSE event? */
 int need_redraw;
@@ -151,10 +152,18 @@ system_graphics_init(void)
     /* set window caption */
     SDL_WM_SetCaption(PROGRAM_NAME, NULL);
 
+	romfsInit();
+	SDL_Surface* logo = SDL_LoadBMP("romfs:/logo.bmp");
+	romfsExit();
+	
+	SDL_BlitSurface(logo, NULL, disp, NULL);
+
     /* fill screen green */
-    SDL_FillRect(disp, NULL, SDL_MapRGB(disp->format, 0, 0xff, 0));
+//    SDL_FillRect(disp, NULL, SDL_MapRGB(disp->format, 0, 0xff, 0));
 
     SDL_Flip(disp);
+
+	SDL_FreeSurface(logo);
 
     need_redraw = FALSE;
     return TRUE;
@@ -184,7 +193,7 @@ system_graphics_screen_init(int mfactor)
     int flags, w, h;
 
     flags = SDL_HWSURFACE | SDL_CONSOLEBOTTOM | SDL_FITHEIGHT;
-    if (fs_mode==2)
+    if (fs_mode==1)
 		flags |= SDL_FULLSCREEN;
 	w = SCREEN_WIDTH;
 	h = SCREEN_HEIGHT;
@@ -264,6 +273,7 @@ system_graphics_update(void)
     _u16 *fbp;
 
     /* handle screen size changes */
+/*
     if (graphics_mag_req != graphics_mag_actual) {
 	if (system_graphics_screen_init(graphics_mag_req) == FALSE) {
 	    fprintf(stderr, "can't switch magnification factor to %d, "
@@ -274,7 +284,7 @@ system_graphics_update(void)
 	else
 	    graphics_mag_actual = graphics_mag_req;
     }
-
+*/
     if (paused && !(use_yuv_now && need_redraw))
 	return;
 

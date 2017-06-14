@@ -4,7 +4,8 @@ typedef struct _menu_item_s {
     int (*proc)(void);      // Called when the menu item is clicked
     struct _menu_s* child;  // Nested child menu
     int flags;              // format of value to show near menu item (0 none, 1 number, 2 string)
-    int *dp;               // value to show near menu item
+    char **st;               // array os strings to show near menu item
+    int *val;               // value to show near menu item or index of strings array
 } menu_item_t;
 
 typedef struct _menu_s {

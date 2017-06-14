@@ -15,6 +15,12 @@
 
 #define LENGTH(array) (sizeof(array)/sizeof(array[0]))
 
+extern int started;
+
+char const *gui_Languages[] = {"Japanese","English"}; 
+char const *gui_Colourmode[] = {"Grayscale","Color","Auto"}; 
+char const *gui_YesNo[] = {"No", "Yes"};
+
 
 // Returns the position of the selected item or -1 if the menu was cancelled
 int openMenu(menu_t* menu) {
@@ -30,49 +36,58 @@ int openMenu(menu_t* menu) {
         consoleClear();
 
         while (aptMainLoop() && loop) {
-            hidScanInput();
+           hidScanInput();
             keys = hidKeysDown();
 
             if (keys & KEY_UP) {
-                pos--;
-                if (pos < startpos) {
-                    if (pos >= 0) {
-                        startpos--;
-                    } else {
-                        pos = numitems - 1;
-                        startpos = MAX(0, numitems - MAX_ITEMS + 1);
-                    }
-                    consoleClear();
-                }
+                do {
+					pos--;
+					if (pos < startpos) {
+						if (pos >= 0) {
+							startpos--;
+						} else {
+							pos = numitems - 1;
+							startpos = MAX(0, numitems - MAX_ITEMS + 1);
+						}
+						consoleClear();
+					}
+				} while ( cur_menu->items[pos].flags==-1);
             } else if (keys & KEY_DOWN) {
-                pos++;
-                if (pos >= MIN(numitems, startpos + MAX_ITEMS - 1)) {
-                    if (pos >= numitems) {
-                        pos = 0;
-                        startpos = 0;
-                    } else {
-                        startpos++;
-                    }
-                    consoleClear();
-                }
+                do {
+					pos++;
+					if (pos >= MIN(numitems, startpos + MAX_ITEMS - 1)) {
+						if (pos >= numitems) {
+							pos = 0;
+							startpos = 0;
+						} else {
+							startpos++;
+						}
+						consoleClear();
+					}
+				} while ( cur_menu->items[pos].flags==-1);
             } else if (keys & KEY_A) {
                 if (cur_menu->items[pos].proc) {
                     int res = cur_menu->items[pos].proc();
 					if (res == -1) {
                         loop = false;
                         break;
-                    }
+                    } else if ((res == 1) && cur_menu->parent) {
+						cur_menu = cur_menu->parent;
+                        break;
+					}  
 				} else if (cur_menu->items[pos].child) {
                     cur_menu = cur_menu->items[pos].child;
                     break;
                 } else {
-                    loop = false;
-                    break;
-                }
+					loop = false;
+					break;
+				}  
+				consoleClear();
             } else if (keys & KEY_B) {
                 if (cur_menu->parent) {
                     cur_menu = cur_menu->parent;
-                } else {
+                    break;
+                 } else {
                     pos = -1;
                     loop = false;
                     break;
@@ -93,9 +108,11 @@ int openMenu(menu_t* menu) {
                     printf(" ");
 
                 printf(line);
-				if (cur_menu->items[i].flags) printf(":   %i",*cur_menu->items[i].dp);
+				if (cur_menu->items[i].flags==1) printf("%i",*cur_menu->items[i].val);
+				else if (cur_menu->items[i].flags==2) printf("%s",cur_menu->items[i].st[*cur_menu->items[i].val]);
                 printf("\x1b[0m\n");
             }
+			if(started) system_VBL();
        }
     }
     return pos;
@@ -114,18 +131,22 @@ static inline void unicodeToChar(char* dst, uint16_t* src, int max) {
 
 
 FS_Archive sdmcArchive;
-
+menu_item_t files[100];
+char filenames[100][256];
 
 // TODO: Only show files that match the extension
 int fileSelect(const char* message, char* path, const char* ext) {
 
     int i, pos = 0, item;
-    menu_item_t files[100];
-    char filenames[100][256];
     Handle dirHandle;
     uint32_t entries_read = 1;
     FS_DirectoryEntry entry;
 
+	for(i=0;i<100;i++) {
+		filenames[i][0]='0';
+		files[pos].text = NULL;
+	}
+	
     FSUSER_OpenArchive(&sdmcArchive, ARCHIVE_SDMC, (FS_Path){PATH_EMPTY, 1, (uint8_t*)"/"});
 
     // Scan directory. Partially taken from github.com/smealum/3ds_hb_menu
@@ -133,7 +154,7 @@ int fileSelect(const char* message, char* path, const char* ext) {
     if (res) {
         consoleClear();
         printf("ERROR: %08X\n", res);
-        printf("Unable to open sdmc:/roms/neogeopocket/\n");
+        printf("Unable to open /roms/neogeopocket/\n");
         return -1;
     }
 
@@ -143,6 +164,7 @@ int fileSelect(const char* message, char* path, const char* ext) {
         if(entries_read && !(entry.attributes & FS_ATTRIBUTE_DIRECTORY)) {
             unicodeToChar(filenames[i], entry.name, 256);
             files[pos].text = filenames[i];
+			files[pos].flags=0;
             pos++;
          }
     }
@@ -170,27 +192,48 @@ int file_loadrom(void) {
 			fprintf(stderr, "wrong file format: no ROM loaded\n");
 		} else {
 			reset();
-			return 0;
+			return -1;
 		}
 	} else
 		fprintf(stderr, "no ROM selected\n");
-    return 1;
-}
-
-int options_frameskip(void) {
-	system_frameskip_key=(system_frameskip_key+1)%6;
     return 0;
 }
 
-int options_sound(void) {
+int options_frameskip(void) {
+	system_frameskip_key++;
+	if(system_frameskip_key>6) system_frameskip_key=1;
+    return 0;
+}
+
+int options_saveslot(void) {
+	state_slot = (state_slot+1)%10;
+    return 0;
+}
+
+
+int options_sound(void) { 
 	mute = !mute;
 	return 0;
+}
 
+int options_save(void) {
+	save_config("/3ds/neopop/neopop.cfg");
+	return 1;
 }
 
 int emulation_reset(void) {
     reset();
     return -1;
+}
+
+int options_language(void) {
+    language_english= language_english?0:1;
+	return 0;
+}
+
+int options_color(void) {
+    system_colour= (system_colour+1)%3;
+	return 0;
 }
 
 int options_fullscreen(void) {
@@ -201,6 +244,7 @@ int emulation_sstate(void) {
     system_state_save();
     return -1;
 }
+
 int emulation_lstate(void) {
     system_state_load();
     return -1;
@@ -212,18 +256,28 @@ int emu_exit(void) {
 }
 
 menu_item_t options_menu_items[] = {
-    {"Frameskip  ", options_frameskip, NULL, 1, &system_frameskip_key},
-    {"Mute       ", options_sound, NULL, 1, &mute},
-    {"Fullscreen ", options_fullscreen, NULL, 1, &fs_mode},
+    {"Frameskip        : ", options_frameskip, NULL, 1, NULL, &system_frameskip_key},
+    {"Mute             : ", options_sound, NULL, 2, &gui_YesNo, &mute},
+    {"Fullscreen       : ", options_fullscreen, NULL, 2, &gui_YesNo, &fs_mode},
+    {"Color mode (*)   : ", options_color, NULL, 2, &gui_Colourmode, &system_colour},
+    {"Sys Language (*) : ", options_language, NULL, 2, &gui_Languages,&language_english},
+    {"", NULL, NULL, -1, NULL, NULL},
+    {"Save options", options_save, NULL, 0, NULL, NULL},
+    {"", NULL, NULL, -1, NULL, NULL},
+    {"", NULL, NULL, -1, NULL, NULL},
+    {"", NULL, NULL, -1, NULL, NULL},
+    {"(*) Needs a system reset", NULL, NULL, -1, NULL, NULL}
 };
 
 menu_item_t main_menu_items[] = {
     {"Load ROM", file_loadrom, NULL, 0, NULL},
-    {"Reset System", emulation_reset, NULL, 0, NULL},
-    {"Save State", emulation_sstate, NULL, 0, NULL},
-    {"Load State", emulation_lstate, NULL, 0, NULL},
-    {"Options", NULL, &options_menu, 0, NULL},
-    {"Exit", emu_exit, NULL, 0, NULL}
+    {"Reset System", emulation_reset, NULL, 0, NULL, NULL},
+    {"Save State", emulation_sstate, NULL, 0, NULL, NULL},
+    {"Load State", emulation_lstate, NULL, 0, NULL, NULL},
+    {"Saveslot   : ", options_saveslot, NULL, 1, NULL, &state_slot},
+    {"Options", NULL, &options_menu, 0, NULL, NULL},
+    {"", NULL, NULL, -1, NULL, NULL},
+    {"Exit", emu_exit, NULL, 0, NULL, NULL}
 };
 
 menu_t main_menu = {
