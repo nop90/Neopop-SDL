@@ -49,6 +49,8 @@
 #include "dma.h"
 #include "mem.h"
 
+static NEOPOPSTATE0050	state;
+
 //=============================================================================
 
 static void read_state_0050(char* filename);
@@ -85,7 +87,8 @@ void state_restore(char* filename)
 //-----------------------------------------------------------------------------
 void state_store(char* filename)
 {
-	NEOPOPSTATE0050	state;
+
+//	NEOPOPSTATE0050	state;
 	int i,j;
 
 	//Build a state description
@@ -98,7 +101,6 @@ void state_store(char* filename)
 	state.pc = pc;
 	state.sr = sr;
 	state.f_dash = f_dash;
-
 	for (i = 0; i < 4; i++)
 	{
 		state.gpr[i] = gpr[i];
@@ -120,7 +122,7 @@ void state_store(char* filename)
 	state.timer_hint = timer_hint;
 
 	for (i = 0; i < 4; i++)	//Up-counters
-		state.timer[i] = timer[i];
+		state.timer[i] = 0;//timer[i];
 
 	state.timer_clock0 = timer_clock0;
 	state.timer_clock1 = timer_clock1;
@@ -140,6 +142,7 @@ void state_store(char* filename)
 	system_debug_message("Saving State ...");
 #endif
 
+
 	system_io_state_write(filename, (_u8*)&state, sizeof(NEOPOPSTATE0050));
 }
 
@@ -147,7 +150,7 @@ void state_store(char* filename)
 
 static void read_state_0050(char* filename)
 {
-	NEOPOPSTATE0050	state;
+//	NEOPOPSTATE0050	state;
 	int i,j;
 
 	if (system_io_state_read(filename, (_u8*)&state, sizeof(NEOPOPSTATE0050)))

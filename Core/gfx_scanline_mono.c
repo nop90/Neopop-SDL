@@ -91,9 +91,9 @@ static void Plot(_u8 x, _u8* palette_ptr, _u16 pal_hi, _u8 index, _u8 depth)
 	b = (data8 & 7) << 9;
 
 	if (negative)
-		cfb_scanline[x] = (r | g | b);
+		cfb_scanline[x] = (r | g | b)& 0x0777;
 	else
-		cfb_scanline[x] = ~(r | g | b);
+		cfb_scanline[x] = (~(r | g | b))& 0x0777;
 }
 
 static void drawPattern(_u8 screenx, _u16 tile, _u8 tiley, _u16 mirror, 
@@ -186,6 +186,7 @@ void gfx_draw_scanline_mono(void)
 	r = (_u16)oowc << 1;
 	g = (_u16)oowc << 5;
 	b = (_u16)oowc << 9;
+
 	
 	if (negative)
 		data16 = (r | g | b);
